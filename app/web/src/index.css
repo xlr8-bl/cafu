@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --background: 24 9% 6%;
+        --foreground: 36 38% 95%;
+
+        --card: 24 9% 8%;
+        --card-foreground: 36 38% 95%;
+
+        --popover: 24 9% 8%;
+        --popover-foreground: 36 38% 95%;
+
+        --primary: 25 75% 53%;
+        --primary-foreground: 30 12% 8%;
+
+        --secondary: 24 6% 14%;
+        --secondary-foreground: 36 38% 95%;
+
+        --muted: 24 6% 14%;
+        --muted-foreground: 30 8% 60%;
+
+        --accent: 25 75% 53%;
+        --accent-foreground: 30 12% 8%;
+
+        --destructive: 0 65% 50%;
+        --destructive-foreground: 36 38% 95%;
+
+        --border: 30 6% 18%;
+        --input: 30 6% 18%;
+        --ring: 25 75% 53%;
+
+        --radius: 1rem;
+    }
+}
+
+@layer base {
+    * { @apply border-border; }
+    html { scroll-behavior: smooth; }
+    body {
+        @apply bg-background text-foreground antialiased;
+        font-feature-settings: 'ss01', 'ss02', 'cv11';
+    }
+    body::before {
+        content: "";
+        position: fixed; inset: 0;
+        pointer-events: none;
+        background-image:
+            radial-gradient(ellipse 80% 50% at 50% -10%, hsl(var(--accent) / 0.18), transparent 60%),
+            radial-gradient(ellipse 40% 30% at 90% 110%, hsl(25 70% 40% / 0.10), transparent 70%);
+        z-index: -1;
+    }
+    body::after {
+        content: "";
+        position: fixed; inset: 0; pointer-events: none;
+        opacity: 0.035;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+        z-index: -1;
+    }
+}
+
+@layer utilities {
+    .text-balance { text-wrap: balance; }
+    .text-pretty  { text-wrap: pretty; }
+    .gradient-mask-r {
+        mask-image: linear-gradient(to right, black 80%, transparent 100%);
+    }
+    .gradient-mask-x {
+        mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+    }
+    .shimmer {
+        background: linear-gradient(90deg,
+            hsl(var(--muted) / 0.4),
+            hsl(var(--muted) / 0.8),
+            hsl(var(--muted) / 0.4));
+        background-size: 200% 100%;
+        animation: shimmer 1.6s linear infinite;
+    }
+    .glass {
+        background: hsl(var(--card) / 0.55);
+        backdrop-filter: saturate(160%) blur(14px);
+        -webkit-backdrop-filter: saturate(160%) blur(14px);
+    }
+}
+
+::selection { background: hsl(var(--accent) / 0.35); color: hsl(var(--foreground)); }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.4); }

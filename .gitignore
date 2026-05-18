@@ -1,0 +1,55 @@
+# Dependencies
+/app/vendor/
+/app/web/node_modules/
+/app/web/dist/
+/app/public/dist/
+/node_modules/
+
+# Composer
+composer.phar
+composer.lock.bak
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Runtime
+/app/storage/logs/*
+!/app/storage/logs/.gitkeep
+/app/storage/cache/*
+!/app/storage/cache/.gitkeep
+
+# Build & coverage
+/build/
+/coverage/
+.phpunit.result.cache
+*.cobertura.xml
+
+# Editor / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Docker
+.docker-data/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Skills artifacts (kept symlinked, not committed)
+/.agents/
+/.claude/
+
+# Lecture notes & proposal kept out of the repo (course materials)
+/CEC418-Software*.pdf
+/Smart_Restaurant_Web_App_SRWA.pdf
+/unit1.txt
+/unit2.txt
+/unit3.txt

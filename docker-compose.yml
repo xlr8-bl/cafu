@@ -1,0 +1,109 @@
+name: srwa
+
+services:
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: srwa/php:dev
+    container_name: srwa-php
+    env_file: .env
+    volumes:
+      - ./app:/var/www/html:cached
+      # Named volume preserves the vendor/ baked into the image so the bind mount above
+      # does not mask it (host has no vendor/ because composer is not installed locally).
+      - app_vendor:/var/www/html/vendor
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks: [srwa]
+
+  # One-shot Vite build. Writes app/public/dist/ on the host via the bind mount.
+  # node_modules is cached in a named volume so repeat runs are fast.
+  web_build:
+    image: node:20-alpine
+    container_name: srwa-web-build
+    working_dir: /web
+    volumes:
+      - ./app/web:/web:cached
+      - ./app/public/dist:/web/dist
+      - app_web_modules:/web/node_modules
+    command: sh -c "npm install --no-audit --no-fund --prefer-offline && npm run build"
+    restart: "no"
+    networks: [srwa]
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: srwa-nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./app/public:/var/www/html/public:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      php:
+        condition: service_started
+      web_build:
+        condition: service_completed_successfully
+    networks: [srwa]
+
+  mysql:
+    image: mysql:8.4
+    container_name: srwa-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASS}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./db/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [srwa]
+
+  # Vite dev server with HMR. Opt-in: `docker compose --profile dev up web_dev`
+  # Open http://localhost:5173 — proxies /api to nginx.
+  web_dev:
+    image: node:20-alpine
+    container_name: srwa-web-dev
+    profiles: ["dev"]
+    working_dir: /web
+    volumes:
+      - ./app/web:/web:cached
+      - app_web_modules:/web/node_modules
+    command: sh -c "npm install --no-audit --no-fund --prefer-offline && npm run dev -- --host 0.0.0.0"
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_PROXY_TARGET: http://nginx:80
+    depends_on: [nginx]
+    networks: [srwa]
+
+  phpmyadmin:
+    image: phpmyadmin:5.2
+    container_name: srwa-pma
+    profiles: ["dev"]
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: ${DB_USER}
+      PMA_PASSWORD: ${DB_PASS}
+    ports:
+      - "8081:80"
+    depends_on: [mysql]
+    networks: [srwa]
+
+volumes:
+  mysql_data:
+  app_vendor:
+  app_web_modules:
+
+networks:
+  srwa:
+    driver: bridge
