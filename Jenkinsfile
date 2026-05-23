@@ -45,7 +45,7 @@ pipeline {
                 }
                 stage('PSR-12 (PHP_CodeSniffer)') {
                     steps {
-                        sh 'app/vendor/bin/phpcs --standard=phpcs.xml --report=checkstyle --report-file=build/phpcs.xml || true'
+                        sh 'app/vendor/bin/phpcs --standard=app/phpcs.xml --report=checkstyle --report-file=build/phpcs.xml || true'
                     }
                     post {
                         always {
@@ -78,14 +78,20 @@ pipeline {
             steps {
                 sh '''
                     cp .env.example .env
+                    # `up --wait` blocks until all services report healthy.
+                    # The `migrate` one-shot must finish (Phinx applies schema) before php starts.
                     ${COMPOSE} up -d --wait
-                    # Wait for nginx to respond
+                    ${COMPOSE} run --rm --entrypoint "" migrate sh -c \
+                        'cd /var/www/html && vendor/bin/phinx status -c /srwa-db/phinx.php'
+                    # Seed dev data so /api/menu returns something to assert on.
+                    ${COMPOSE} exec -T mysql sh -c \
+                        'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" < /srwa-seed.sql'
                     for i in $(seq 1 30); do
-                        if curl -fsS http://localhost:8080/healthz; then break; fi
+                        if curl -fsS http://localhost:8090/healthz; then break; fi
                         sleep 2
                     done
-                    curl -fsS http://localhost:8080/healthz
-                    curl -fsS http://localhost:8080/api/menu | head -c 200
+                    curl -fsS http://localhost:8090/healthz
+                    curl -fsS http://localhost:8090/api/menu | head -c 200
                 '''
             }
             post {

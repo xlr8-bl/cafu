@@ -11,6 +11,7 @@ import { ReservationSection }  from '@/components/ReservationSection';
 import { StorySection }        from '@/components/StorySection';
 import { Footer }              from '@/components/Footer';
 import { CartDrawer }          from '@/components/CartDrawer';
+import { CookieBanner }        from '@/components/CookieBanner';
 import { Toaster }             from '@/components/ui/sonner';
 import { useCart, cartCount, cartTotal } from '@/store/cart';
 import { formatXAF }           from '@/lib/format';
@@ -77,6 +78,7 @@ export default function App() {
             </AnimatePresence>
 
             <CartDrawer open={cartOpen} onOpenChange={setCartOpen} />
+            <CookieBanner />
             <Toaster />
         </>
     );

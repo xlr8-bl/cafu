@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
 use Srwa\Database;
+use Srwa\Logging\Events;
 
 final class Reservation
 {
@@ -38,6 +39,16 @@ final class Reservation
             ]);
             $reservationId = (int) $pdo->lastInsertId();
             $pdo->commit();
+
+            Events::record(
+                Events::KIND_RESERVATION_HELD,
+                subjectKind: 'reservation',
+                subjectId:   $reservationId,
+                payload:     ['party_size' => $partySize, 'reserved_for' => $when->format(DATE_ATOM)],
+                actorKind:   'customer',
+                actorId:     $customerId,
+            );
+
             return [
                 'reservation_id' => $reservationId,
                 'reserved_for'   => $when->format(DATE_ATOM),

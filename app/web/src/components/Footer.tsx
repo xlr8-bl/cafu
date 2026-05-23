@@ -264,20 +264,27 @@ export function Footer() {
                 </div>
 
                 {/* Legal */}
-                <div className="mt-14 pt-8 border-t border-border flex flex-col-reverse md:flex-row items-start md:items-center justify-between gap-4 text-sm text-muted-foreground">
-                    <p>
-                        © {new Date().getFullYear()} Maison Cafu · Bonapriso, Douala.
-                        All rights reserved. <span className="hidden sm:inline">CEC418 · Software Construction.</span>
-                    </p>
-                    <div className="flex items-center gap-3 flex-wrap">
-                        <span className="font-mono text-[0.7rem] uppercase tracking-[0.16em]">Payments</span>
-                        <div className="flex items-center gap-2">
-                            {['Cash', 'MTN MoMo', 'Orange Money', 'Visa'].map((p) => (
-                                <span key={p} className="inline-flex items-center rounded-md border border-border bg-white/[0.03] px-2.5 py-1 font-mono text-[0.66rem] uppercase tracking-[0.1em]">
-                                    {p}
-                                </span>
-                            ))}
+                <div className="mt-14 pt-8 border-t border-border flex flex-col gap-4 text-sm text-muted-foreground">
+                    <div className="flex flex-col-reverse md:flex-row items-start md:items-center justify-between gap-4">
+                        <p>
+                            © {new Date().getFullYear()} Maison Cafu · Bonapriso, Douala.
+                            All rights reserved. <span className="hidden sm:inline">CEC418 · Software Construction.</span>
+                        </p>
+                        <div className="flex items-center gap-3 flex-wrap">
+                            <span className="font-mono text-[0.7rem] uppercase tracking-[0.16em]">Payments</span>
+                            <div className="flex items-center gap-2">
+                                {['Cash', 'MTN MoMo', 'Orange Money', 'Visa'].map((p) => (
+                                    <span key={p} className="inline-flex items-center rounded-md border border-border bg-white/[0.03] px-2.5 py-1 font-mono text-[0.66rem] uppercase tracking-[0.1em]">
+                                        {p}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
+                    </div>
+                    <div className="flex items-center gap-4 flex-wrap pt-2 border-t border-border/40 text-xs">
+                        <a href="/legal/privacy" className="hover:text-foreground transition-colors">Privacy</a>
+                        <a href="/legal/terms"   className="hover:text-foreground transition-colors">Terms of service</a>
+                        <a href="/legal/cookies" className="hover:text-foreground transition-colors">Cookie notice</a>
                     </div>
                 </div>
             </div>

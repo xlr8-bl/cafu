@@ -24,6 +24,7 @@ composer.lock.bak
 /build/
 /coverage/
 .phpunit.result.cache
+.phpunit.cache/
 *.cobertura.xml
 
 # Editor / OS

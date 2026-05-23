@@ -6,14 +6,26 @@ SHELL := /usr/bin/env bash
 help: ## Show this help.
 	@awk 'BEGIN {FS = ":.*##"; printf "Targets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
-up: ## Boot the full stack.
+up: ## Boot the full stack (runs migrations automatically).
 	docker compose up -d --build
 
 down: ## Stop the stack, keep data.
 	docker compose down
 
-nuke: ## Stop the stack, drop the DB volume.
+nuke: ## Stop the stack, drop the DB + vendor volumes (forces full rebuild).
 	docker compose down -v
+
+migrate: ## Apply any new DB migrations against the running stack.
+	docker compose run --rm migrate
+
+rollback: ## Roll back the most recent migration. Destructive — confirm first.
+	docker compose run --rm --entrypoint "" migrate sh -c 'cd /var/www/html && vendor/bin/phinx rollback -c /srwa-db/phinx.php'
+
+migration-status: ## Show which migrations have been applied.
+	docker compose run --rm --entrypoint "" migrate sh -c 'cd /var/www/html && vendor/bin/phinx status -c /srwa-db/phinx.php'
+
+seed: ## Load dev seed data into the running DB. Drops + reseeds menu/customers; not idempotent.
+	docker compose exec -T mysql sh -c 'mysql -u"$$MYSQL_USER" -p"$$MYSQL_PASSWORD" "$$MYSQL_DATABASE" < /srwa-seed.sql'
 
 logs: ## Tail all logs.
 	docker compose logs -f --tail=200
@@ -28,8 +40,8 @@ lint: ## Run PSR-12 check.
 	docker compose run --rm php composer lint
 
 smoke: ## Hit /healthz and /api/menu.
-	@curl -fsS http://localhost:8080/healthz && echo
-	@curl -fsS http://localhost:8080/api/menu | head -c 200 && echo
+	@curl -fsS http://localhost:8090/healthz && echo
+	@curl -fsS http://localhost:8090/api/menu | head -c 200 && echo
 
 pairings: ## Rebuild ml/pairings.json from orders.
 	docker compose run --rm \

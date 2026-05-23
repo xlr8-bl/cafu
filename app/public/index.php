@@ -2,9 +2,16 @@
 
 declare(strict_types=1);
 
-require __DIR__ . '/../vendor/autoload.php';
+require __DIR__ . '/../src/bootstrap.php';
+
+use Srwa\Logging\Logger;
 
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
+
+Logger::get()->info('http.request', [
+    'method' => $_SERVER['REQUEST_METHOD'] ?? 'GET',
+    'path'   => $path,
+]);
 
 // Health endpoint — used by Docker, Jenkins, and GH Actions smoke jobs.
 if ($path === '/healthz') {

@@ -25,9 +25,20 @@ try {
         default => Json::send(404, ['error' => 'Not found']),
     };
 } catch (\InvalidArgumentException $e) {
+    \Srwa\Logging\Logger::get()->notice('api.validation_error', [
+        'path'  => $path,
+        'error' => $e->getMessage(),
+    ]);
     Json::send(422, ['error' => $e->getMessage()]);
 } catch (\Throwable $e) {
-    error_log('[srwa] ' . $e->getMessage());
+    \Srwa\Logging\Logger::get()->error('api.unhandled_exception', [
+        'path'      => $path,
+        'exception' => get_class($e),
+        'error'     => $e->getMessage(),
+    ]);
+    if (function_exists('\Sentry\captureException')) {
+        \Sentry\captureException($e);
+    }
     Json::send(500, ['error' => 'Internal error']);
 }
 

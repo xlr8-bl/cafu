@@ -1,10 +1,9 @@
-# Compose overrides used inside Jenkins. Mainly: no phpmyadmin, deterministic ports, no bind mounts for app.
+# Compose overrides used inside Jenkins. Drop bind mounts where the baked image is what CI tests;
+# no phpmyadmin; mysql + nginx ports stay internal. Public entrypoint is Caddy on host :8090.
 services:
   php:
     volumes: !reset []
   nginx:
-    ports:
-      - "8080:80"
     volumes:
       - ./app/public:/var/www/html/public:ro
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro

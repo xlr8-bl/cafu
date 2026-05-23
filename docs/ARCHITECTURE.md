@@ -4,8 +4,16 @@
             ┌──────────────────────────────────────────┐
             │                  browser                 │
             └────────────────┬─────────────────────────┘
-                             │ HTML / fetch (JSON)
+                             │ HTTPS (or HTTP in dev)
                              ▼
+   ┌─────────────────────────────────────────────────────┐
+   │   Caddy :80 / :443                                  │
+   │   - auto-TLS via Let's Encrypt (prod)               │
+   │   - HSTS + security headers                         │
+   │   - JSON access logs to stdout                      │
+   └────────────────┬────────────────────────────────────┘
+                    │ HTTP, internal network
+                    ▼
    ┌─────────────────────────────────────────────────────┐
    │   nginx :80                                         │
    │   - serves /var/www/html/public/*.{css,js,svg,png}  │
@@ -54,6 +62,31 @@ Each layer can be replaced without touching its neighbours — a direct applicat
 of the "anticipating change" principle from Unit 1 §1.3. If the team later swaps
 nginx + php-fpm for a Caddy + RoadRunner stack, the only file that changes is
 `Dockerfile`.
+
+## Schema lifecycle (Phinx)
+
+Schema is owned by **Phinx** under `db/migrations/`. The `migrate` service in
+`docker-compose.yml` runs once per boot, applying pending migrations in
+filename-timestamp order and recording them in the `schema_migrations` table.
+Mysql no longer auto-loads `init.sql` — that file has been retired.
+
+```
+boot:  mysql (healthy)  →  migrate (one-shot, exits 0)  →  php  →  nginx
+```
+
+- **Add a migration:** drop a file `db/migrations/YYYYMMDDHHMMSS_snake_name.php`
+  defining a `class PascalName extends AbstractMigration` with `up()` and
+  `down()`. Run `make migrate` (or `docker compose up -d`) to apply.
+- **Roll back:** `make rollback` reverses the most recent migration.
+- **Seed dev data:** `make seed` loads `db/seed.sql` into the running DB
+  (idempotency is the seed's job; current seed assumes a fresh schema).
+- **Config:** `db/phinx.php` reads `DB_*` env vars — same file works for
+  local, Docker, and CI.
+
+Phinx satisfies two SWEBOK Fig 1.1 leaves: §1.5 ("Construction with Reuse"
+of an external library) and §3.6 ("Construction with Reuse"). It also closes
+the configuration-management gap in §1.3 (Anticipating Change) — schema
+changes are now versioned, ordered, and reviewable as code.
 
 ## Domain model
 
@@ -112,7 +145,7 @@ Per Unit 1 §1.5, "construction with reuse":
 
 - Docker base images (`composer:2.7`, `php:8.3-fpm-alpine`, `nginx:1.27-alpine`,
   `mysql:8.4`, `phpmyadmin:5.2`) — every CI run starts from a known-good image.
-- `pymysql`, `phpunit`, `phpcs` — pinned in `composer.json` / `requirements.txt`.
+- `pymysql`, `phpunit`, `phpcs`, `phinx` — pinned in `composer.json` / `requirements.txt`.
 
 Per Unit 1 §1.5.6, the in-house code itself follows reusability standards:
 PSR-4 autoload, PSR-12 style, named constants over magic numbers.

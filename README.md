@@ -27,15 +27,36 @@ PHPUnit, PSR-12, CodeQL) so the project survives evolution past the course.
 
 ```bash
 cp .env.example .env
-docker compose up -d --build        # builds image, brings stack up
+docker compose up -d --build        # builds image, runs migrations, brings stack up
+make seed                           # loads dev menu/customer data (one-time)
 # Optional: also run phpMyAdmin
 docker compose --profile dev up -d phpmyadmin
 ```
 
-- App:        http://localhost:8080
-- Health:     http://localhost:8080/healthz
-- API:        http://localhost:8080/api/menu
+- App:        http://localhost:8090
+- Health:     http://localhost:8090/healthz
+- API:        http://localhost:8090/api/menu
 - phpMyAdmin: http://localhost:8081 (only with the `dev` profile)
+
+### Database migrations
+
+Schema is owned by **Phinx** under `db/migrations/`. The `migrate` service runs
+on every `docker compose up` and applies any new migrations idempotently.
+
+> **Upgrading from a pre-Phinx checkout?** Run `make nuke && make up` once.
+> The named `app_vendor` volume caches `vendor/` from the old image and would
+> otherwise mask the freshly built one containing Phinx.
+
+```bash
+make migrate            # apply pending migrations
+make migration-status   # see which migrations are applied / pending
+make rollback           # undo the most recent migration (destructive)
+make seed               # (re)load dev seed data
+```
+
+To add a migration: create `db/migrations/YYYYMMDDHHMMSS_short_name.php` with a
+Phinx `AbstractMigration` subclass and `up()` / `down()` methods. See
+`20260521000001_initial_schema.php` for the pattern.
 
 To run tests outside Docker:
 
@@ -56,8 +77,11 @@ composer lint
 │   ├── composer.json
 │   └── phpunit.xml
 ├── db/
-│   ├── init.sql          schema
-│   └── seed.sql          realistic seed data
+│   ├── migrations/       Phinx migrations (schema lives here)
+│   ├── sql/              raw SQL sourced by migrations
+│   ├── seeds/            (optional) Phinx data seeders
+│   ├── phinx.php         Phinx config
+│   └── seed.sql          dev seed data (loaded by `make seed`)
 ├── docker/               nginx + php-fpm configs, Jenkins CI compose overlay
 ├── ml/                   Python recommender (offline batch)
 ├── docs/                 ARCHITECTURE.md + DEVOPS.md (lecture mapping)
@@ -93,6 +117,19 @@ Jenkins poll ──▶  install ──▶  lint+style (parallel) ──▶  unit
 
 See [`docs/DEVOPS.md`](docs/DEVOPS.md) for how each piece maps back to the lecture
 chapters on V&V, maintenance, evolution, reuse, and standards.
+
+## Project documentation
+
+| Document                                | What it covers                                                                 |
+| --------------------------------------- | ------------------------------------------------------------------------------ |
+| [`docs/JOURNEY.md`](docs/JOURNEY.md)    | Progressive walk-through of the whole project, written for someone new to DevOps |
+| [`docs/SHIPPING.md`](docs/SHIPPING.md)  | Per-PR detailed log of the production-readiness overlay (the 6 PRs)            |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | High-level architecture diagram and design rationale                    |
+| [`docs/RUNBOOK.md`](docs/RUNBOOK.md)    | Operational procedures (backups, restore, common breakage)                     |
+| [`docs/DEVOPS.md`](docs/DEVOPS.md)      | DevOps pipeline mapped to lecture chapters                                     |
+| [`docs/lecture-mapping.md`](docs/lecture-mapping.md) | Every lecture concept → concrete repo artefact                  |
+
+**Start with [`JOURNEY.md`](docs/JOURNEY.md) if you're reading this repo for the first time.**
 
 ## Maintenance posture
 

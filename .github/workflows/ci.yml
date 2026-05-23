@@ -39,7 +39,7 @@ jobs:
 
       - name: PSR-12 style
         working-directory: app
-        run: vendor/bin/phpcs --standard=../phpcs.xml
+        run: vendor/bin/phpcs --standard=phpcs.xml
 
       - name: Unit tests
         working-directory: app
@@ -82,7 +82,7 @@ jobs:
       - name: Hit healthz
         run: |
           for i in $(seq 1 30); do
-            curl -fsS http://localhost:8080/healthz && exit 0
+            curl -fsS http://localhost:8090/healthz && exit 0
             sleep 2
           done
           docker compose logs

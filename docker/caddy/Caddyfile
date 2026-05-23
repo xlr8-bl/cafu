@@ -1,0 +1,40 @@
+# Caddy reverse proxy.
+#
+# Dev (default): SITE_ADDRESS unset -> Caddy listens on :80 inside the
+# container, host-mapped to localhost:8090. Pure HTTP, no certs.
+#
+# Prod: set SITE_ADDRESS=cafu.example.com in .env (and map host ports
+# 80:80 + 443:443). Caddy will request a Let's Encrypt cert
+# automatically, listen on 443, and redirect :80 -> :443.
+
+{
+	# Used by ACME if the site address is a real domain.
+	email {$CADDY_EMAIL:admin@example.com}
+	# Quiet the startup banner from logs.
+	auto_https disable_redirects
+}
+
+{$SITE_ADDRESS::80} {
+	# X-Real-IP, X-Forwarded-For and X-Forwarded-Proto are forwarded automatically.
+	reverse_proxy nginx:80
+
+	encode gzip zstd
+
+	header {
+		# Only meaningful over HTTPS but harmless under HTTP - browsers ignore on plain HTTP.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options    "nosniff"
+		Referrer-Policy           "strict-origin-when-cross-origin"
+		# Hide the Server banner so we don't advertise the stack.
+		-Server
+	}
+
+	# Edge-level block on dotfiles (.git, .env, etc.) just in case.
+	@hidden path_regexp \.(\.|[^/]+\/\.)
+	respond @hidden 404
+
+	log {
+		output stdout
+		format json
+	}
+}

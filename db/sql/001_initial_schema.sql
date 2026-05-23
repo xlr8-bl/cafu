@@ -1,5 +1,6 @@
 -- SRWA initial schema. Designed for evolution: every table carries created_at/updated_at
 -- so adaptive/perfective changes can layer in audit + soft deletes without rewrites.
+-- Sourced by db/migrations/20260521000001_initial_schema.php — do not load directly.
 
 SET NAMES utf8mb4;
 SET time_zone = '+00:00';
