@@ -38,6 +38,9 @@ Thumbs.db
 # Microsoft Office lock files (created when a doc is open in Word/Excel/PowerPoint)
 ~$*
 
+# Personal deliverables (kept local, never committed)
+/deliverables/
+
 # Docker
 .docker-data/
 
