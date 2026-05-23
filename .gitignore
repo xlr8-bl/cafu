@@ -35,6 +35,9 @@ composer.lock.bak
 .DS_Store
 Thumbs.db
 
+# Microsoft Office lock files (created when a doc is open in Word/Excel/PowerPoint)
+~$*
+
 # Docker
 .docker-data/
 
