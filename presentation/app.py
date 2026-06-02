@@ -10,15 +10,28 @@ Run locally:   streamlit run presentation/app.py
 Deploy:        Streamlit Community Cloud, main file = presentation/app.py
 """
 
+import base64
 from pathlib import Path
 
 import streamlit as st
+from cryptography.fernet import Fernet, InvalidToken
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
-# The written report lives in the local-only deliverables folder (gitignored, since it
-# carries the author's name + matric). The download button below therefore appears only
-# when the file is actually present — i.e. when running locally — and stays hidden on the
-# public Streamlit Cloud deploy.
-REPORT_PATH = Path(__file__).resolve().parent.parent / "deliverables" / "SRWA_Report_NKAFU_CT23A129_v2.docx"
+# Downloadable deliverables live in presentation/assets/ so they ship with the repo and
+# work on the public Streamlit Cloud deploy. The slide deck carries no personal data and
+# is offered freely. The written report carries the author's name + matric, so it is stored
+# ENCRYPTED (report.enc) and unlocked in-app with an access token — see secure_report.py.
+ASSETS = Path(__file__).resolve().parent / "assets"
+REPORT_ENC = ASSETS / "report.enc"
+PPTX_PATH = ASSETS / "Maison_Cafu_Presentation.pptx"
+_PBKDF2_ITERATIONS = 200_000
+
+
+def _derive_key(token: str, salt: bytes) -> bytes:
+    kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt,
+                     iterations=_PBKDF2_ITERATIONS)
+    return base64.urlsafe_b64encode(kdf.derive(token.encode("utf-8")))
 
 st.set_page_config(
     page_title="Maison Cafu — The Guided Tour",
@@ -195,17 +208,47 @@ def code(snippet, language="php", filename=None):
     st.code(snippet, language=language)
 
 
-def report_download():
-    """Offer the full written report — only when the local file is present."""
-    if REPORT_PATH.exists():
-        with open(REPORT_PATH, "rb") as fh:
-            st.download_button(
-                label="Download the full written report (.docx)",
-                data=fh.read(),
-                file_name=REPORT_PATH.name,
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                use_container_width=True,
+def downloads(slot="main"):
+    """Slide deck is public; the written report is unlocked with an access token."""
+    # The slide deck — no personal data, free to download.
+    if PPTX_PATH.exists():
+        st.download_button(
+            label="Download the slide deck (.pptx)",
+            data=PPTX_PATH.read_bytes(),
+            file_name=PPTX_PATH.name,
+            mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            key=f"deck_dl_{slot}",
+            use_container_width=True,
+        )
+
+    # The written report — encrypted, access-token protected.
+    if REPORT_ENC.exists():
+        with st.expander("Written report (.docx) — access-protected"):
+            st.caption("Enter the access token to unlock and download the full report.")
+            token = st.text_input(
+                "Access token",
+                type="password",
+                key=f"report_token_{slot}",
+                placeholder="Enter token…",
+                label_visibility="collapsed",
             )
+            if token:
+                try:
+                    raw = REPORT_ENC.read_bytes()
+                    salt, blob = raw[:16], raw[16:]
+                    plaintext = Fernet(_derive_key(token, salt)).decrypt(blob)
+                except (InvalidToken, ValueError):
+                    st.error("Incorrect token — access denied.")
+                else:
+                    st.success("Token accepted — your download is ready.")
+                    st.download_button(
+                        label="Download report (.docx)",
+                        data=plaintext,
+                        file_name="SRWA_Report_NKAFU_CT23A129_v2.docx",
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        key=f"report_dl_{slot}",
+                        use_container_width=True,
+                    )
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -256,7 +299,10 @@ def ch_welcome():
         "built: simple enough to understand, and sturdy enough to grow.”",
     )
 
-    report_download()
+    st.markdown("---")
+    st.markdown("##### Take it with you")
+    st.write("The slide deck is free to download. The full written report is access-protected.")
+    downloads("welcome")
 
 
 def ch_what():
@@ -916,8 +962,8 @@ def ch_cheatsheet():
 
     st.markdown("---")
     st.markdown("##### Go deeper")
-    st.write("The full written report covers every point above in detail.")
-    report_download()
+    st.write("The slide deck is free to download. The full written report is access-protected.")
+    downloads("finale")
 
 
 # ──────────────────────────────────────────────────────────────────────────────

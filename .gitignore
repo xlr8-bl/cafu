@@ -50,8 +50,9 @@ __pycache__/
 .venv/
 venv/
 
-# Streamlit presentation — local smoke-test logs
+# Streamlit presentation — local smoke-test logs + slide render previews
 /presentation/_smoke.*
+/presentation/_preview/
 
 # Skills artifacts (kept symlinked, not committed)
 /.agents/
