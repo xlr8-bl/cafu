@@ -10,7 +10,15 @@ Run locally:   streamlit run presentation/app.py
 Deploy:        Streamlit Community Cloud, main file = presentation/app.py
 """
 
+from pathlib import Path
+
 import streamlit as st
+
+# The written report lives in the local-only deliverables folder (gitignored, since it
+# carries the author's name + matric). The download button below therefore appears only
+# when the file is actually present — i.e. when running locally — and stays hidden on the
+# public Streamlit Cloud deploy.
+REPORT_PATH = Path(__file__).resolve().parent.parent / "deliverables" / "SRWA_Report_NKAFU_CT23A129_v2.docx"
 
 st.set_page_config(
     page_title="Maison Cafu — The Guided Tour",
@@ -187,6 +195,19 @@ def code(snippet, language="php", filename=None):
     st.code(snippet, language=language)
 
 
+def report_download():
+    """Offer the full written report — only when the local file is present."""
+    if REPORT_PATH.exists():
+        with open(REPORT_PATH, "rb") as fh:
+            st.download_button(
+                label="Download the full written report (.docx)",
+                data=fh.read(),
+                file_name=REPORT_PATH.name,
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                use_container_width=True,
+            )
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 #  Chapters
 # ──────────────────────────────────────────────────────────────────────────────
@@ -234,6 +255,8 @@ def ch_welcome():
         "“Maison Cafu is a smart restaurant website — but the real story is <i>how</i> it’s "
         "built: simple enough to understand, and sturdy enough to grow.”",
     )
+
+    report_download()
 
 
 def ch_what():
@@ -890,6 +913,11 @@ def ch_cheatsheet():
         "Go in order, use the restaurant pictures, and land each fundamental with its one real example. "
         "You're not memorising code — you're telling a clear story you fully understand. You've got this.",
     )
+
+    st.markdown("---")
+    st.markdown("##### Go deeper")
+    st.write("The full written report covers every point above in detail.")
+    report_download()
 
 
 # ──────────────────────────────────────────────────────────────────────────────
