@@ -223,32 +223,41 @@ def downloads(slot="main"):
 
     # The written report — encrypted, access-token protected.
     if REPORT_ENC.exists():
+        unlocked_key = f"report_unlocked_{slot}"
         with st.expander("Written report (.docx) — access-protected"):
-            st.caption("Enter the access token to unlock and download the full report.")
-            token = st.text_input(
-                "Access token",
-                type="password",
-                key=f"report_token_{slot}",
-                placeholder="Enter token…",
-                label_visibility="collapsed",
-            )
-            if token:
+            # A form with an explicit submit button so it works on mobile, where the
+            # on-screen keyboard's Enter key does not reliably submit a bare text input.
+            with st.form(f"report_form_{slot}", clear_on_submit=False):
+                st.caption("Enter the access token, then tap Unlock.")
+                token = st.text_input(
+                    "Access token",
+                    type="password",
+                    key=f"report_token_{slot}",
+                    placeholder="Enter token…",
+                    label_visibility="collapsed",
+                )
+                submitted = st.form_submit_button("Unlock", use_container_width=True)
+
+            if submitted:
                 try:
                     raw = REPORT_ENC.read_bytes()
                     salt, blob = raw[:16], raw[16:]
-                    plaintext = Fernet(_derive_key(token, salt)).decrypt(blob)
+                    st.session_state[unlocked_key] = Fernet(_derive_key(token, salt)).decrypt(blob)
                 except (InvalidToken, ValueError):
+                    st.session_state.pop(unlocked_key, None)
                     st.error("Incorrect token — access denied.")
-                else:
-                    st.success("Token accepted — your download is ready.")
-                    st.download_button(
-                        label="Download report (.docx)",
-                        data=plaintext,
-                        file_name="SRWA_Report_NKAFU_CT23A129_v2.docx",
-                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                        key=f"report_dl_{slot}",
-                        use_container_width=True,
-                    )
+
+            # Persist across the rerun that clicking the download button triggers.
+            if st.session_state.get(unlocked_key):
+                st.success("Token accepted — your download is ready.")
+                st.download_button(
+                    label="Download report (.docx)",
+                    data=st.session_state[unlocked_key],
+                    file_name="SRWA_Report_NKAFU_CT23A129_v2.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    key=f"report_dl_{slot}",
+                    use_container_width=True,
+                )
 
 
 # ──────────────────────────────────────────────────────────────────────────────
