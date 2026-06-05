@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://cafu-production.up.railway.app/api/:path*" },
-    { "source": "/healthz", "destination": "https://cafu-production.up.railway.app/healthz" }
+    { "source": "/api/:path*", "destination": "https://cafu-production-e0c5.up.railway.app/api/:path*" },
+    { "source": "/healthz", "destination": "https://cafu-production-e0c5.up.railway.app/healthz" }
   ]
 }
